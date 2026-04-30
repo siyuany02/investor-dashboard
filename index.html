@@ -1,0 +1,785 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>NYC Apartment Tower — Investor Dashboard</title>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js"></script>
+    <style>
+        @import url("https://fonts.googleapis.com/css2?family=DM+Sans:ital,opsz,wght@0,9..40,400;0,9..40,500;0,9..40,600;0,9..40,700;1,9..40,400&display=swap");
+
+        :root {
+            --bg: #0c1117;
+            --bg-card: #141b24;
+            --bg-card-hover: #1a2330;
+            --border: rgba(255, 255, 255, 0.07);
+            --border-strong: rgba(255, 255, 255, 0.12);
+            --text: #f0f4f8;
+            --text-secondary: #94a3b8;
+            --accent: #22d3ee;
+            --accent-soft: rgba(34, 211, 238, 0.14);
+            --accent-glow: rgba(34, 211, 238, 0.35);
+            --success: #34d399;
+            --success-soft: rgba(52, 211, 153, 0.12);
+            --radius: 14px;
+            --radius-sm: 10px;
+            --font: "DM Sans", system-ui, -apple-system, "Segoe UI", sans-serif;
+            --shadow: 0 8px 32px rgba(0, 0, 0, 0.45);
+            --ease: cubic-bezier(0.4, 0, 0.2, 1);
+        }
+
+        *, *::before, *::after { box-sizing: border-box; }
+
+        body {
+            margin: 0;
+            min-height: 100vh;
+            font-family: var(--font);
+            font-size: 15px;
+            line-height: 1.55;
+            color: var(--text);
+            background: var(--bg);
+            background-image:
+                radial-gradient(ellipse 100% 60% at 50% -15%, rgba(34, 211, 238, 0.09), transparent 55%),
+                radial-gradient(ellipse 50% 40% at 100% 0%, rgba(52, 211, 153, 0.06), transparent);
+            padding: 1.5rem clamp(1rem, 3vw, 2rem) 2.5rem;
+        }
+
+        .app {
+            max-width: 1120px;
+            margin: 0 auto;
+        }
+
+        .top-bar {
+            display: flex;
+            flex-wrap: wrap;
+            align-items: center;
+            justify-content: space-between;
+            gap: 1rem;
+            margin-bottom: 1.75rem;
+        }
+
+        .brand {
+            display: flex;
+            align-items: center;
+            gap: 0.65rem;
+        }
+
+        .brand-mark {
+            width: 36px;
+            height: 36px;
+            border-radius: 10px;
+            background: linear-gradient(135deg, var(--accent), #06b6d4);
+            display: grid;
+            place-items: center;
+            font-size: 1.1rem;
+            box-shadow: 0 4px 16px var(--accent-glow);
+        }
+
+        .brand-text {
+            font-weight: 700;
+            font-size: 1rem;
+            letter-spacing: -0.02em;
+        }
+
+        .brand-sub {
+            font-size: 0.75rem;
+            color: var(--text-secondary);
+            font-weight: 500;
+        }
+
+        .btn-primary {
+            font-family: inherit;
+            font-weight: 600;
+            font-size: 0.9rem;
+            padding: 0.65rem 1.25rem;
+            border: none;
+            border-radius: var(--radius-sm);
+            cursor: pointer;
+            background: linear-gradient(135deg, #22d3ee, #06b6d4);
+            color: #042f2e;
+            box-shadow: 0 4px 20px var(--accent-glow);
+            transition: transform 0.15s var(--ease), box-shadow 0.15s var(--ease);
+        }
+
+        .btn-primary:hover {
+            transform: translateY(-1px);
+            box-shadow: 0 6px 28px var(--accent-glow);
+        }
+
+        .btn-primary:active {
+            transform: translateY(0);
+        }
+
+        .property-hero {
+            margin-bottom: 1.75rem;
+        }
+
+        .pill {
+            display: inline-block;
+            font-size: 0.7rem;
+            font-weight: 600;
+            letter-spacing: 0.08em;
+            text-transform: uppercase;
+            color: var(--accent);
+            background: var(--accent-soft);
+            padding: 0.35rem 0.7rem;
+            border-radius: 999px;
+            margin-bottom: 0.6rem;
+        }
+
+        h1 {
+            margin: 0 0 0.35rem;
+            font-size: clamp(1.65rem, 4vw, 2.15rem);
+            font-weight: 700;
+            letter-spacing: -0.03em;
+            line-height: 1.15;
+        }
+
+        .property-meta {
+            color: var(--text-secondary);
+            font-size: 0.9rem;
+        }
+
+        .metrics {
+            display: grid;
+            grid-template-columns: repeat(4, 1fr);
+            gap: 0.875rem;
+            margin-bottom: 1.5rem;
+        }
+
+        @media (max-width: 900px) {
+            .metrics { grid-template-columns: repeat(2, 1fr); }
+        }
+
+        @media (max-width: 420px) {
+            .metrics { grid-template-columns: 1fr; }
+        }
+
+        .metric {
+            background: var(--bg-card);
+            border: 1px solid var(--border);
+            border-radius: var(--radius);
+            padding: 1.1rem 1.15rem;
+            box-shadow: var(--shadow);
+            transition: border-color 0.2s, background 0.2s;
+        }
+
+        .metric:hover {
+            border-color: var(--border-strong);
+            background: var(--bg-card-hover);
+        }
+
+        .metric-label {
+            font-size: 0.72rem;
+            font-weight: 600;
+            letter-spacing: 0.06em;
+            text-transform: uppercase;
+            color: var(--text-secondary);
+            margin-bottom: 0.45rem;
+        }
+
+        .metric-value {
+            font-size: 1.45rem;
+            font-weight: 700;
+            font-variant-numeric: tabular-nums;
+            letter-spacing: -0.02em;
+        }
+
+        .metric-hint {
+            margin-top: 0.35rem;
+            font-size: 0.8rem;
+            color: var(--text-secondary);
+        }
+
+        .metric-hint.positive { color: var(--success); }
+
+        .chart-card {
+            background: var(--bg-card);
+            border: 1px solid var(--border);
+            border-radius: var(--radius);
+            padding: 1.25rem 1.35rem 1.1rem;
+            margin-bottom: 1.5rem;
+            box-shadow: var(--shadow);
+        }
+
+        .chart-head {
+            display: flex;
+            flex-wrap: wrap;
+            align-items: center;
+            justify-content: space-between;
+            gap: 1rem;
+            margin-bottom: 1rem;
+        }
+
+        .chart-title {
+            font-size: 0.72rem;
+            font-weight: 600;
+            letter-spacing: 0.07em;
+            text-transform: uppercase;
+            color: var(--text-secondary);
+        }
+
+        .chart-title strong {
+            display: block;
+            margin-top: 0.2rem;
+            font-size: 1.05rem;
+            font-weight: 700;
+            letter-spacing: -0.02em;
+            color: var(--text);
+            text-transform: none;
+        }
+
+        .range-toggle {
+            display: flex;
+            padding: 3px;
+            background: rgba(0, 0, 0, 0.35);
+            border-radius: 10px;
+            border: 1px solid var(--border);
+        }
+
+        .range-toggle button {
+            font-family: inherit;
+            font-size: 0.8rem;
+            font-weight: 600;
+            padding: 0.45rem 0.85rem;
+            border: none;
+            border-radius: 8px;
+            cursor: pointer;
+            background: transparent;
+            color: var(--text-secondary);
+            transition: background 0.2s, color 0.2s;
+        }
+
+        .range-toggle button:hover {
+            color: var(--text);
+        }
+
+        .range-toggle button.active {
+            background: var(--accent-soft);
+            color: var(--accent);
+        }
+
+        .chart-wrap {
+            position: relative;
+            height: min(280px, 42vw);
+            min-height: 200px;
+        }
+
+        .split {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 1rem;
+            align-items: stretch;
+        }
+
+        @media (max-width: 768px) {
+            .split { grid-template-columns: 1fr; }
+        }
+
+        .panel {
+            background: var(--bg-card);
+            border: 1px solid var(--border);
+            border-radius: var(--radius);
+            padding: 1.15rem 1.25rem;
+            box-shadow: var(--shadow);
+            min-height: 280px;
+            display: flex;
+            flex-direction: column;
+        }
+
+        .panel h2 {
+            margin: 0 0 1rem;
+            font-size: 0.72rem;
+            font-weight: 600;
+            letter-spacing: 0.07em;
+            text-transform: uppercase;
+            color: var(--text-secondary);
+        }
+
+        .activity-list {
+            list-style: none;
+            margin: 0;
+            padding: 0;
+            flex: 1;
+        }
+
+        .activity-item {
+            width: 100%;
+            text-align: left;
+            font-family: inherit;
+            font-size: 0.92rem;
+            padding: 0.85rem 0.75rem;
+            margin-bottom: 0.35rem;
+            border: 1px solid transparent;
+            border-radius: var(--radius-sm);
+            background: rgba(0, 0, 0, 0.2);
+            color: var(--text);
+            cursor: pointer;
+            transition: border-color 0.2s, background 0.2s;
+        }
+
+        .activity-item:hover {
+            border-color: var(--border-strong);
+            background: rgba(255, 255, 255, 0.03);
+        }
+
+        .activity-item.active {
+            border-color: rgba(34, 211, 238, 0.35);
+            background: var(--accent-soft);
+        }
+
+        .activity-item-title {
+            font-weight: 600;
+            margin-bottom: 0.2rem;
+        }
+
+        .activity-item-date {
+            font-size: 0.78rem;
+            color: var(--text-secondary);
+        }
+
+        .detail-panel .placeholder {
+            color: var(--text-secondary);
+            font-size: 0.9rem;
+            line-height: 1.6;
+            margin: 0;
+        }
+
+        .detail-panel .detail-title {
+            font-size: 1.1rem;
+            font-weight: 700;
+            margin: 0 0 0.35rem;
+            letter-spacing: -0.02em;
+        }
+
+        .detail-panel .detail-date {
+            font-size: 0.82rem;
+            color: var(--text-secondary);
+            margin-bottom: 1rem;
+        }
+
+        .detail-panel .detail-grid {
+            display: grid;
+            gap: 0.65rem;
+            margin-bottom: 1rem;
+        }
+
+        .detail-kv {
+            display: flex;
+            justify-content: space-between;
+            gap: 1rem;
+            font-size: 0.88rem;
+            padding: 0.5rem 0;
+            border-bottom: 1px solid var(--border);
+        }
+
+        .detail-kv span:first-child { color: var(--text-secondary); }
+        .detail-kv span:last-child { font-weight: 600; font-variant-numeric: tabular-nums; }
+
+        .detail-body {
+            font-size: 0.9rem;
+            color: var(--text-secondary);
+            line-height: 1.65;
+            margin: 0;
+        }
+
+        /* Modal */
+        .modal-backdrop {
+            position: fixed;
+            inset: 0;
+            background: rgba(4, 10, 18, 0.72);
+            backdrop-filter: blur(6px);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            padding: 1rem;
+            z-index: 100;
+            opacity: 0;
+            visibility: hidden;
+            transition: opacity 0.25s var(--ease), visibility 0.25s;
+        }
+
+        .modal-backdrop.open {
+            opacity: 1;
+            visibility: visible;
+        }
+
+        .modal {
+            background: var(--bg-card);
+            border: 1px solid var(--border-strong);
+            border-radius: var(--radius);
+            padding: 1.5rem;
+            max-width: 400px;
+            width: 100%;
+            box-shadow: 0 24px 64px rgba(0, 0, 0, 0.55);
+            transform: scale(0.96) translateY(8px);
+            transition: transform 0.25s var(--ease);
+        }
+
+        .modal-backdrop.open .modal {
+            transform: scale(1) translateY(0);
+        }
+
+        .modal h3 {
+            margin: 0 0 0.5rem;
+            font-size: 1.2rem;
+            font-weight: 700;
+        }
+
+        .modal p {
+            margin: 0 0 1.25rem;
+            color: var(--text-secondary);
+            font-size: 0.92rem;
+        }
+
+        .modal-actions {
+            display: flex;
+            gap: 0.65rem;
+            justify-content: flex-end;
+        }
+
+        .btn-ghost {
+            font-family: inherit;
+            font-weight: 600;
+            font-size: 0.88rem;
+            padding: 0.55rem 1rem;
+            border-radius: var(--radius-sm);
+            border: 1px solid var(--border-strong);
+            background: transparent;
+            color: var(--text);
+            cursor: pointer;
+        }
+
+        .btn-ghost:hover {
+            background: rgba(255, 255, 255, 0.05);
+        }
+
+        .toast {
+            position: fixed;
+            bottom: 1.5rem;
+            left: 50%;
+            transform: translateX(-50%) translateY(120%);
+            background: var(--success-soft);
+            border: 1px solid rgba(52, 211, 153, 0.35);
+            color: var(--success);
+            padding: 0.65rem 1.25rem;
+            border-radius: 999px;
+            font-weight: 600;
+            font-size: 0.88rem;
+            z-index: 101;
+            transition: transform 0.35s var(--ease);
+        }
+
+        .toast.show {
+            transform: translateX(-50%) translateY(0);
+        }
+    </style>
+</head>
+<body>
+    <div class="app">
+        <div class="top-bar">
+            <div class="brand">
+                <div class="brand-mark" aria-hidden="true">◆</div>
+                <div>
+                    <div class="brand-text">T.R.E.</div>
+                    <div class="brand-sub">Tokenized real estate</div>
+                </div>
+            </div>
+            <button type="button" class="btn-primary" id="buyBtn">Buy Tokens</button>
+        </div>
+
+        <header class="property-hero">
+            <span class="pill">Your position</span>
+            <h1>NYC Apartment Tower</h1>
+            <p class="property-meta">Manhattan · Class A multifamily · On-chain SPV</p>
+        </header>
+
+        <section class="metrics" aria-label="Portfolio summary">
+            <div class="metric">
+                <div class="metric-label">Investment value</div>
+                <div class="metric-value">$47,250</div>
+                <div class="metric-hint positive">+6.8% vs. cost basis</div>
+            </div>
+            <div class="metric">
+                <div class="metric-label">Token ownership</div>
+                <div class="metric-value">315</div>
+                <div class="metric-hint">3.15% of offering</div>
+            </div>
+            <div class="metric">
+                <div class="metric-label">Monthly income</div>
+                <div class="metric-value">$412</div>
+                <div class="metric-hint">Last distribution Mar 1</div>
+            </div>
+            <div class="metric">
+                <div class="metric-label">Total income</div>
+                <div class="metric-value">$8,640</div>
+                <div class="metric-hint">Since inception</div>
+            </div>
+        </section>
+
+        <section class="chart-card" aria-labelledby="chartHeading">
+            <div class="chart-head">
+                <div class="chart-title" id="chartHeading">
+                    <strong>Portfolio value</strong>
+                    Tracked NAV per your holdings
+                </div>
+                <div class="range-toggle" role="group" aria-label="Chart time range">
+                    <button type="button" data-range="1M" class="active">1M</button>
+                    <button type="button" data-range="3M">3M</button>
+                    <button type="button" data-range="1Y">1Y</button>
+                </div>
+            </div>
+            <div class="chart-wrap">
+                <canvas id="valueChart" aria-label="Line chart of portfolio value"></canvas>
+            </div>
+        </section>
+
+        <div class="split">
+            <section class="panel" aria-labelledby="activityHeading">
+                <h2 id="activityHeading">Recent activity</h2>
+                <ul class="activity-list" id="activityList"></ul>
+            </section>
+            <section class="panel detail-panel" aria-live="polite" aria-label="Activity details">
+                <h2>Details</h2>
+                <div id="detailContent">
+                    <p class="placeholder">Select an activity to view transaction details, amounts, and notes.</p>
+                </div>
+            </section>
+        </div>
+    </div>
+
+    <div class="modal-backdrop" id="modalBackdrop" role="dialog" aria-modal="true" aria-labelledby="modalTitle" aria-hidden="true">
+        <div class="modal">
+            <h3 id="modalTitle">Confirm purchase</h3>
+            <p>You are about to initiate a purchase of additional NYC Apartment Tower tokens through the T.R.E. marketplace. This demo does not process real payments.</p>
+            <div class="modal-actions">
+                <button type="button" class="btn-ghost" id="modalCancel">Cancel</button>
+                <button type="button" class="btn-primary" id="modalConfirm">Confirm</button>
+            </div>
+        </div>
+    </div>
+
+    <div class="toast" id="toast" role="status">Purchase flow started — check your wallet app.</div>
+
+    <script>
+        (function () {
+            const chartRanges = {
+                "1M": {
+                    labels: ["W1", "W2", "W3", "W4", "D26", "D27", "D28", "D29", "Today"],
+                    data: [44200, 44450, 44100, 44600, 44820, 44950, 45100, 45280, 47250]
+                },
+                "3M": {
+                    labels: ["Jan", "Jan mid", "Feb", "Feb mid", "Mar", "Mar mid", "Apr"],
+                    data: [39800, 40500, 41200, 41800, 42800, 43600, 47250]
+                },
+                "1Y": {
+                    labels: ["May '25", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec", "Jan", "Feb", "Mar", "Apr"],
+                    data: [32000, 32800, 33200, 33800, 34500, 35200, 36100, 37200, 38500, 40100, 42800, 47250]
+                }
+            };
+
+            const activities = [
+                {
+                    id: "a1",
+                    title: "Distribution received",
+                    date: "April 1, 2026",
+                    rows: [
+                        ["Amount", "$412.00"],
+                        ["Type", "Monthly cash flow"],
+                        ["TX", "0x7a3…c91f"]
+                    ],
+                    body: "Pro-rata share of building NOI after reserves. Funds settled to your linked wallet within 24 hours."
+                },
+                {
+                    id: "a2",
+                    title: "Purchased 45 tokens",
+                    date: "March 18, 2026",
+                    rows: [
+                        ["Tokens", "45"],
+                        ["Price / token", "$142.50"],
+                        ["Total", "$6,412.50"],
+                        ["TX", "0xb2e…8d04"]
+                    ],
+                    body: "Secondary market match executed at NAV + 0.5% spread. Ownership updated on-chain."
+                },
+                {
+                    id: "a3",
+                    title: "Governance vote cast",
+                    date: "March 2, 2026",
+                    rows: [
+                        ["Proposal", "PROP-14: Lobby refresh"],
+                        ["Your vote", "For"],
+                        ["Weight", "270 tokens at snapshot"]
+                    ],
+                    body: "Vote recorded on-chain. Results published after the 7-day voting window."
+                },
+                {
+                    id: "a4",
+                    title: "KYC verification approved",
+                    date: "February 10, 2026",
+                    rows: [
+                        ["Status", "Approved"],
+                        ["Tier", "Accredited — US"],
+                        ["Reviewer", "Automated + manual"]
+                    ],
+                    body: "You may now subscribe to new offerings and trade on the secondary book subject to limits."
+                }
+            ];
+
+            let chartInstance = null;
+
+            function formatMoney(n) {
+                return "$" + n.toLocaleString("en-US", { maximumFractionDigits: 0 });
+            }
+
+            function buildChart(rangeKey) {
+                const ctx = document.getElementById("valueChart").getContext("2d");
+                const { labels, data } = chartRanges[rangeKey];
+
+                const gradient = ctx.createLinearGradient(0, 0, 0, 280);
+                gradient.addColorStop(0, "rgba(34, 211, 238, 0.35)");
+                gradient.addColorStop(1, "rgba(34, 211, 238, 0)");
+
+                if (chartInstance) chartInstance.destroy();
+
+                chartInstance = new Chart(ctx, {
+                    type: "line",
+                    data: {
+                        labels,
+                        datasets: [{
+                            label: "Value (USD)",
+                            data,
+                            borderColor: "#22d3ee",
+                            backgroundColor: gradient,
+                            borderWidth: 2.5,
+                            fill: true,
+                            tension: 0.35,
+                            pointRadius: 3,
+                            pointHoverRadius: 6,
+                            pointBackgroundColor: "#0c1117",
+                            pointBorderColor: "#22d3ee",
+                            pointBorderWidth: 2
+                        }]
+                    },
+                    options: {
+                        responsive: true,
+                        maintainAspectRatio: false,
+                        interaction: { intersect: false, mode: "index" },
+                        plugins: {
+                            legend: { display: false },
+                            tooltip: {
+                                backgroundColor: "#141b24",
+                                titleColor: "#f0f4f8",
+                                bodyColor: "#94a3b8",
+                                borderColor: "rgba(255,255,255,0.1)",
+                                borderWidth: 1,
+                                padding: 12,
+                                callbacks: {
+                                    label: function (ctx) {
+                                        return " " + formatMoney(ctx.parsed.y);
+                                    }
+                                }
+                            }
+                        },
+                        scales: {
+                            x: {
+                                grid: { color: "rgba(255,255,255,0.04)" },
+                                ticks: { color: "#94a3b8", maxRotation: 45, minRotation: 0, font: { size: 11 } }
+                            },
+                            y: {
+                                grid: { color: "rgba(255,255,255,0.06)" },
+                                ticks: {
+                                    color: "#94a3b8",
+                                    font: { size: 11 },
+                                    callback: function (v) { return "$" + (v / 1000) + "k"; }
+                                }
+                            }
+                        }
+                    }
+                });
+            }
+
+            document.querySelectorAll(".range-toggle button").forEach(function (btn) {
+                btn.addEventListener("click", function () {
+                    document.querySelectorAll(".range-toggle button").forEach(function (b) {
+                        b.classList.toggle("active", b === btn);
+                    });
+                    buildChart(btn.getAttribute("data-range"));
+                });
+            });
+
+            buildChart("1M");
+
+            const listEl = document.getElementById("activityList");
+            const detailEl = document.getElementById("detailContent");
+
+            function renderDetail(act) {
+                if (!act) {
+                    detailEl.innerHTML = "<p class=\"placeholder\">Select an activity to view transaction details, amounts, and notes.</p>";
+                    return;
+                }
+                var rowsHtml = act.rows.map(function (r) {
+                    return "<div class=\"detail-kv\"><span>" + r[0] + "</span><span>" + r[1] + "</span></div>";
+                }).join("");
+                detailEl.innerHTML =
+                    "<h3 class=\"detail-title\">" + act.title + "</h3>" +
+                    "<div class=\"detail-date\">" + act.date + "</div>" +
+                    "<div class=\"detail-grid\">" + rowsHtml + "</div>" +
+                    "<p class=\"detail-body\">" + act.body + "</p>";
+            }
+
+            activities.forEach(function (act) {
+                var li = document.createElement("li");
+                var b = document.createElement("button");
+                b.type = "button";
+                b.className = "activity-item";
+                b.setAttribute("data-id", act.id);
+                b.innerHTML =
+                    "<div class=\"activity-item-title\">" + act.title + "</div>" +
+                    "<div class=\"activity-item-date\">" + act.date + "</div>";
+                b.addEventListener("click", function () {
+                    document.querySelectorAll(".activity-item").forEach(function (x) {
+                        x.classList.toggle("active", x.getAttribute("data-id") === act.id);
+                    });
+                    renderDetail(act);
+                });
+                li.appendChild(b);
+                listEl.appendChild(li);
+            });
+
+            var backdrop = document.getElementById("modalBackdrop");
+            var toast = document.getElementById("toast");
+            var toastTimer = null;
+
+            function openModal() {
+                backdrop.classList.add("open");
+                backdrop.setAttribute("aria-hidden", "false");
+                document.getElementById("modalCancel").focus();
+            }
+
+            function closeModal() {
+                backdrop.classList.remove("open");
+                backdrop.setAttribute("aria-hidden", "true");
+            }
+
+            document.getElementById("buyBtn").addEventListener("click", openModal);
+            document.getElementById("modalCancel").addEventListener("click", closeModal);
+            backdrop.addEventListener("click", function (e) {
+                if (e.target === backdrop) closeModal();
+            });
+            document.getElementById("modalConfirm").addEventListener("click", function () {
+                closeModal();
+                if (toastTimer) clearTimeout(toastTimer);
+                toast.classList.add("show");
+                toastTimer = setTimeout(function () {
+                    toast.classList.remove("show");
+                }, 3200);
+            });
+
+            document.addEventListener("keydown", function (e) {
+                if (e.key === "Escape" && backdrop.classList.contains("open")) closeModal();
+            });
+        })();
+    </script>
+</body>
+</html>
